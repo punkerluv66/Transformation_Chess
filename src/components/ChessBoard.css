@@ -1,0 +1,23 @@
+.chess-board-container {
+  background-color: #8B4513;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.chess-board {
+  display: grid;
+  grid-template-columns: repeat(8, 60px);
+  grid-template-rows: repeat(8, 60px);
+  gap: 1px;
+  background-color: #654321;
+  border: 2px solid #654321;
+  border-radius: 5px;
+}
+
+@media (max-width: 600px) {
+  .chess-board {
+    grid-template-columns: repeat(8, 45px);
+    grid-template-rows: repeat(8, 45px);
+  }
+}

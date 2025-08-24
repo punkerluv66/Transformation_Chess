@@ -1,0 +1,154 @@
+.game-info {
+  background-color: white;
+  padding: 25px;
+  border-radius: 10px;
+  min-width: 250px;
+  max-width: 300px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: left;
+}
+
+.current-player {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+  padding: 10px;
+  border-radius: 5px;
+  background-color: #f8f9fa;
+}
+
+.white-turn {
+  color: #666;
+  border-left: 4px solid #ddd;
+}
+
+.black-turn {
+  color: #000;
+  border-left: 4px solid #333;
+}
+
+.check-status {
+  color: #ff6600;
+  border-left: 4px solid #ff6600;
+  background-color: #fff3e0;
+  animation: pulse 1s infinite;
+}
+
+.checkmate-status {
+  color: #d32f2f;
+  border-left: 4px solid #d32f2f;
+  background-color: #ffebee;
+  font-size: 18px;
+  animation: victory-flash 2s infinite;
+}
+
+.stalemate-status {
+  color: #795548;
+  border-left: 4px solid #795548;
+  background-color: #efebe9;
+}
+
+.game-over-message {
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: #d32f2f;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: linear-gradient(135deg, #ffebee, #e8f5e8);
+  border: 2px solid #d32f2f;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.game-over-message h2 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  color: #2e7d32;
+}
+
+.game-over-message p {
+  margin: 0;
+  font-size: 16px;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+@keyframes victory-flash {
+  0%, 50% { background-color: #ffebee; }
+  25%, 75% { background-color: #e8f5e8; }
+}
+
+.reset-button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.reset-button.game-over-button {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  font-size: 18px;
+  padding: 15px;
+  animation: pulse-button 2s infinite;
+}
+
+.reset-button:hover {
+  background-color: #0056b3;
+}
+
+.reset-button.game-over-button:hover {
+  background: linear-gradient(135deg, #218838, #1ba085);
+  transform: scale(1.05);
+}
+
+.reset-button:active {
+  background-color: #004085;
+}
+
+@keyframes pulse-button {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.instructions {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.instructions h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.instructions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.instructions li {
+  margin-bottom: 5px;
+}
+
+.instructions li strong {
+  color: #d32f2f;
+}
+
+.debug-info {
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+  margin-top: 10px;
+}

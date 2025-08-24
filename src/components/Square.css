@@ -1,0 +1,74 @@
+.square {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.square.light {
+  background-color: #F0D9B5;
+}
+
+.square.dark {
+  background-color: #B58863;
+}
+
+.square.selected {
+  background-color: #90EE90 !important;
+}
+
+.square.possible-move {
+  background-color: #FFD700 !important;
+}
+
+.square.fusion-target {
+  background-color: #FF69B4 !important;
+}
+
+.square:hover {
+  opacity: 0.8;
+}
+
+.piece {
+  color: #000;
+  font-size: 36px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.piece.white {
+  color: #fff;
+  text-shadow: 1px 1px 1px #000;
+}
+
+.piece.black {
+  color: #000;
+  text-shadow: 1px 1px 1px #fff;
+}
+
+.fused-piece {
+  font-size: 12px;
+  line-height: 1.2;
+  font-family: monospace;
+}
+
+@media (max-width: 600px) {
+  .square {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .piece {
+    font-size: 14px;
+  }
+  
+  .fused-piece {
+    font-size: 9px;
+  }
+}
