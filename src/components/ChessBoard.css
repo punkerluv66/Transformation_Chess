@@ -21,3 +21,11 @@
     grid-template-rows: repeat(8, 45px);
   }
 }
+
+.chess-board-container.flipped {
+  transform: rotate(180deg);
+}
+
+.chess-board-container.flipped .square {
+  transform: rotate(180deg);
+}

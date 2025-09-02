@@ -46,8 +46,10 @@ const ChessBoard = ({ gameState, onSquareClick, game, playerColor }) => {
     return null;
   };
 
+  const boardClassName = `chess-board-container${playerColor === 'black' ? ' flipped' : ''}`;
+
   return (
-    <div className="chess-board-container">
+    <div className={boardClassName}>
       <div className="chess-board">
         {board.map((row, rowIndex) =>
           row.map((piece, colIndex) => (
