@@ -217,6 +217,156 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('rejoinRoom', ({ roomId, playerName }) => {
+    console.log(`👥 ${playerName} attempting to rejoin room ${roomId}`);
+    
+    const room = gameRooms.get(roomId);
+    if (!room) {
+      socket.emit('rejoinRoomResult', {
+        success: false,
+        error: 'Room not found or expired'
+      });
+      return;
+    }
+
+    const existingPlayer = room.players.find(p => p.name === playerName);
+    
+    if (existingPlayer) {
+      existingPlayer.id = socket.id;
+      socket.join(roomId);
+      
+      console.log(`✅ Player ${playerName} rejoined room ${roomId}`);
+      
+      if (room.isGameStarted) {
+        socket.emit('rejoinRoomResult', {
+          success: true,
+          roomId: room.roomId,
+          players: room.players,
+          gameStarted: room.isGameStarted,
+          gameState: room.gameState
+        });
+        
+        socket.emit('gameStarted', room.toJSON());
+      } else {
+        socket.emit('rejoinRoomResult', {
+          success: true,
+          roomId: room.roomId,
+          players: room.players,
+          gameStarted: false
+        });
+      }
+    } else {
+      socket.emit('rejoinRoomResult', {
+        success: false,
+        error: 'Player not found in this room'
+      });
+    }
+  });
+
+socket.on('checkRoomStatus', ({ roomId, playerName }) => {
+  const room = gameRooms.get(roomId);
+  socket.emit('roomStatusResult', {
+    exists: !!room,
+    gameStarted: room ? room.isGameStarted : false
+  });
+});
+
+socket.on('rejoinRoom', ({ roomId, playerName }) => {
+  console.log(`👥 ${playerName} attempting to rejoin room ${roomId}`);
+  
+  const room = gameRooms.get(roomId);
+  if (!room) {
+    socket.emit('rejoinRoomResult', {
+      success: false,
+      error: 'Room not found or expired'
+    });
+    return;
+  }
+
+  const existingPlayer = room.players.find(p => p.name === playerName);
+  
+  if (existingPlayer) {
+    const playerColor = existingPlayer.color;
+    
+    existingPlayer.id = socket.id;
+    socket.join(roomId);
+    
+    console.log(`✅ Player ${playerName} rejoined room ${roomId} as ${playerColor}`);
+    
+    if (room.isGameStarted) {
+      socket.emit('rejoinRoomResult', {
+        success: true,
+        roomId: room.roomId,
+        players: room.players,
+        gameStarted: true,
+        gameState: room.gameState
+      });
+      
+      // И сразу запускаем игру
+      socket.emit('gameStarted', room.toJSON());
+      
+      // Уведомляем другого игрока
+      socket.to(roomId).emit('playerReconnected', {
+        name: playerName,
+        color: playerColor
+      });
+    } else {
+      socket.emit('rejoinRoomResult', {
+        success: true,
+        roomId: room.roomId,
+        players: room.players,
+        gameStarted: false
+      });
+    }
+  } else {
+    socket.emit('rejoinRoomResult', {
+      success: false,
+      error: 'Player not found in this room'
+    });
+  }
+});
+
+
+  socket.on('leaveGame', ({ roomId, playerColor }) => {
+    console.log(`🚪 Player ${socket.id} leaving game in room ${roomId}`);
+    
+    const room = gameRooms.get(roomId);
+    if (!room) return;
+    
+    const leavingPlayer = room.getPlayerBySocketId(socket.id);
+    if (!leavingPlayer) return;
+    
+    const opponent = room.players.find(p => p.id !== socket.id);
+    
+    if (opponent) {
+      const winnerColor = opponent.color;
+      
+      console.log(`👑 Player ${opponent.name} (${winnerColor}) wins by default`);
+      
+      room.gameState.isGameOver = true;
+      room.gameState.gameStatus = 'checkmate';
+      room.gameState.winner = winnerColor;
+      
+      socket.to(roomId).emit('opponentLeft', {
+        opponentName: leavingPlayer.name,
+        opponentColor: leavingPlayer.color,
+        winnerColor: winnerColor,
+        gameState: room.gameState
+      });
+      
+      room.isGameStarted = false;
+      room.gameState = room.createInitialGameState();
+      room.players = [opponent]; 
+    }
+    
+    socket.leave(roomId);
+    
+    if (room.players.length === 0) {
+      gameRooms.delete(roomId);
+      console.log(`🗑️ Empty room ${roomId} deleted`);
+    }
+  });
+
   socket.on('makeMove', ({ roomId, from, to, gameState }) => {
     console.log(`🎯 Move received for room ${roomId}:`, { 
       from: `${from.row},${from.col}`, 

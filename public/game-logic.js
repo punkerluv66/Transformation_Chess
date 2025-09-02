@@ -469,7 +469,7 @@ class ChessGame {
             selectedSquare: this.selectedSquare,
             possibleMoves: this.possibleMoves,
             gameStatus: this.gameStatus,
-            isGameOver: this.isGameOver(),
+            isGameOver: typeof this.isGameOver === 'function' ? this.isGameOver() : this.isGameOver,
             winner: this.getWinner()
         };
     }

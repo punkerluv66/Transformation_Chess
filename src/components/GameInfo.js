@@ -42,11 +42,18 @@ const GameInfo = ({ gameState, onResetGame }) => {
       {isGameOver && (
         <div className="game-over-message">
           <h2>🎉 GAME OVER! 🎉</h2>
-          {gameStatus === 'checkmate' && (
-            <p><strong>{winner.charAt(0).toUpperCase() + winner.slice(1)} player wins!</strong></p>
-          )}
-          {gameStatus === 'stalemate' && (
-            <p><strong>It's a draw!</strong></p>
+          
+          {gameState.message ? (
+            <p><strong>{gameState.message}</strong></p>
+          ) : (
+            <>
+              {gameStatus === 'checkmate' && (
+                <p><strong>{winner.charAt(0).toUpperCase() + winner.slice(1)} player wins!</strong></p>
+              )}
+              {gameStatus === 'stalemate' && (
+                <p><strong>It's a draw!</strong></p>
+              )}
+            </>
           )}
         </div>
       )}

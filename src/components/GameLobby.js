@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import './GameLobby.css';
 
-const GameLobby = ({ onGameStart }) => {
+const GameLobby = ({ onGameStart, savedRoomData }) => {
   const [socket, setSocket] = useState(null);
   const [playerName, setPlayerName] = useState('');
   const [roomId, setRoomId] = useState('');
@@ -14,10 +14,8 @@ const GameLobby = ({ onGameStart }) => {
 
   const getServerUrl = () => {
     if (process.env.NODE_ENV === 'production') {
-      // В продакшене - тот же домен
       return window.location.origin;
     }
-    // В разработке - прокси на бэкенд или прямое подключение
     return window.location.origin;
   };
 
@@ -101,6 +99,59 @@ const GameLobby = ({ onGameStart }) => {
     };
   }, [onGameStart]);
 
+  useEffect(() => {
+    if (!savedRoomData || !savedRoomData.roomId) return;
+    
+    console.log('🔄 Setting up rejoin attempt for room:', savedRoomData.roomId);
+    
+    let rejoinAttempts = 0;
+    const maxRejoinAttempts = 5;
+    
+    const attemptRejoin = () => {
+      if (!socket || !socket.connected) {
+        console.log('⏳ Socket not ready yet, delaying rejoin attempt');
+        return;
+      }
+      
+      if (currentRoom) {
+        console.log('✅ Already in a room, skipping rejoin attempt');
+        return;
+      }
+      
+      console.log(`🔄 Rejoin attempt ${rejoinAttempts + 1}/${maxRejoinAttempts} for room ${savedRoomData.roomId}`);
+      
+      if (savedRoomData.playerName) {
+        setPlayerName(savedRoomData.playerName);
+      }
+      
+      socket.emit('rejoinRoom', {
+        roomId: savedRoomData.roomId,
+        playerName: savedRoomData.playerName
+      });
+      
+      rejoinAttempts++;
+    };
+    
+    // Попытка переподключения каждую секунду
+    const rejoinInterval = setInterval(() => {
+      if (rejoinAttempts >= maxRejoinAttempts || currentRoom) {
+        console.log('🛑 Stopping rejoin attempts:', 
+                    currentRoom ? 'Already in room' : 'Max attempts reached');
+        clearInterval(rejoinInterval);
+        return;
+      }
+      
+      attemptRejoin();
+    }, 1000); // Пробовать каждую секунду
+    
+    // Попробовать сразу
+    attemptRejoin();
+    
+    return () => {
+      clearInterval(rejoinInterval);
+    };
+  }, [savedRoomData, socket, currentRoom]);
+  
   const createRoom = () => {
     if (!playerName.trim()) {
       setError('Please enter your name');

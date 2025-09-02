@@ -11,7 +11,59 @@ function App() {
   const [gameKey, setGameKey] = useState(0);
   const [socket, setSocket] = useState(null);
   const [onlineGameData, setOnlineGameData] = useState(null);
+  
+  const saveRoomData = (roomData, socketId) => {
+    if (!roomData || !socketId) {
+      console.error('❌ Cannot save room data: invalid data or socketId');
+      return;
+    }
+    
+    localStorage.setItem('chess_room', JSON.stringify({
+      roomId: roomData.roomId,
+      playerName: roomData.players.find(p => p.id === socketId)?.name,
+      playerColor: roomData.players.find(p => p.id === socketId)?.color,
+      timestamp: new Date().getTime()
+    }));
+    console.log('🔄 Room data saved to localStorage');
+  };
 
+  
+
+  const loadRoomData = () => {
+    const savedData = localStorage.getItem('chess_room');
+    console.log('🔎 Checking for saved room data...', savedData ? 'Found' : 'Not found');
+    
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        console.log('📊 Parsed room data:', parsedData);
+        
+        if (new Date().getTime() - parsedData.timestamp < 24 * 60 * 60 * 1000) {
+          console.log('🔄 Found valid saved room:', parsedData);
+          return parsedData;
+        } else {
+          console.log('⏰ Room data expired, clearing');
+          localStorage.removeItem('chess_room');
+        }
+      } catch (e) {
+        console.error('❌ Error parsing saved room data:', e);
+        localStorage.removeItem('chess_room');
+      }
+    }
+    return null;
+  };
+
+  const clearRoomData = () => {
+    localStorage.removeItem('chess_room');
+    console.log('🧹 Room data cleared from localStorage');
+  };
+  useEffect(() => {
+  const savedRoom = loadRoomData();
+  if (savedRoom && savedRoom.roomId) {
+    console.log('🔄 Found saved room, redirecting to lobby');
+    setGameMode('lobby');
+  }
+}, []);
   useEffect(() => {
     if (gameMode === 'local') {
       initLocalGame();
@@ -41,8 +93,8 @@ function App() {
     setSocket(gameSocket);
     setOnlineGameData(gameData);
     setGameMode('online');
+    saveRoomData(gameData, gameSocket.id);
     
-    // Инициализируем локальную копию игры
     const initGame = () => {
       if (window.ChessGame) {
         const newGame = new window.ChessGame();
@@ -56,7 +108,6 @@ function App() {
         setGame(newGame);
         setGameState(newGame.getGameState());
         
-        // Подписываемся на события игры
         setupGameEvents(gameSocket, newGame);
       } else {
         setTimeout(initGame, 100);
@@ -67,10 +118,10 @@ function App() {
   };
 
   const setupGameEvents = (gameSocket, gameInstance) => {
-    // Удаляем старые обработчики перед добавлением новых
     gameSocket.off('gameStateUpdate');
     gameSocket.off('gameReset');
     gameSocket.off('moveError');
+    gameSocket.off('playerReconnected');
 
     gameSocket.on('gameStateUpdate', (data) => {
       console.log('📡 Game state update received:', data);
@@ -96,7 +147,48 @@ function App() {
       console.error('❌ Move error:', error);
       alert(`Move error: ${error}`);
     });
-  };
+    gameSocket.on('playerReconnected', (data) => {
+    console.log(`👋 Player ${data.name} reconnected as ${data.color}`);
+    // Обновляем список игроков с правильными цветами
+    if (onlineGameData) {
+      const updatedPlayers = [...onlineGameData.players];
+      const playerIndex = updatedPlayers.findIndex(p => p.name === data.name);
+      if (playerIndex !== -1) {
+        updatedPlayers[playerIndex].id = gameSocket.id; // используйте gameSocket, а не socket
+        setOnlineGameData({
+          ...onlineGameData,
+          players: updatedPlayers
+        });
+      }
+    }
+  });
+  gameSocket.on('opponentLeft', (data) => {
+    console.log('👋 Opponent left the game:', data);
+    
+    // Обновляем состояние игры - победа!
+    gameInstance.gameStatus = 'checkmate';
+    gameInstance.isGameOver = true;
+    gameInstance.winner = data.winnerColor;
+    
+    // Обновляем UI
+    setGameState({
+      ...gameInstance.getGameState(),
+      gameStatus: 'checkmate',
+      isGameOver: true,
+      winner: data.winnerColor,
+      message: `${data.opponentName} left the game. You win!`
+    });
+    
+    // Показываем сообщение
+    alert(`${data.opponentName} left the game. You win!`);
+    
+    // Переключаем на режим ожидания нового оппонента
+    setTimeout(() => {
+      setGameMode('lobby');
+    }, 3000);
+  });
+};
+
 
   const handleSquareClick = (row, col) => {
     console.log(`🎯 App handleSquareClick called: ${row}, ${col}`, { 
@@ -223,17 +315,22 @@ function App() {
   };
 
   const backToMenu = () => {
-    if (socket) {
-      socket.close();
-    }
-    setGameMode('menu');
-    setGame(null);
-    setGameState(null);
-    setSocket(null);
-    setOnlineGameData(null);
-  };
+  if (socket && socket.connected && onlineGameData) {
+    socket.emit('leaveGame', {
+      roomId: onlineGameData.roomId,
+      playerColor: onlineGameData.players.find(p => p.id === socket.id)?.color
+    });
+    
+    clearRoomData();
+  }
+  
+  setGameMode('menu');
+  setGame(null);
+  setGameState(null);
+  setSocket(null);
+  setOnlineGameData(null);
+};
 
-  // Определяем цвет текущего игрока для онлайн игры
   const getPlayerColor = () => {
     if (gameMode === 'online' && onlineGameData && socket) {
       const playerData = onlineGameData.players.find(p => p.id === socket.id);
@@ -284,7 +381,8 @@ function App() {
   }
 
   if (gameMode === 'lobby') {
-    return <GameLobby onGameStart={handleOnlineGameStart} />;
+    const savedRoomData = loadRoomData();
+  return <GameLobby onGameStart={handleOnlineGameStart} savedRoomData={savedRoomData} />;
   }
 
   if (!game || !gameState) {
